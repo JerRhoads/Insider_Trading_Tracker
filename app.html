@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insider Trading Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .control-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .status.loading {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+        }
+
+        .status.error {
+            background: linear-gradient(135deg, #fd79a8, #e84393);
+            color: white;
+        }
+
+        .status.success {
+            background: linear-gradient(135deg, #81ecec, #00b894);
+            color: white;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h3 {
+            margin-bottom: 15px;
+            color: #667eea;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .metric {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .metric.positive {
+            color: #00b894;
+        }
+
+        .metric.negative {
+            color: #e17055;
+        }
+
+        .trades-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .trades-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            background: transparent;
+            color: #667eea;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .filter-btn.active, .filter-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .trade-item {
+            border: 1px solid #e1e5e9;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        }
+
+        .trade-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .trade-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .trade-company {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .trade-type {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .trade-type.buy {
+            background: linear-gradient(135deg, #81ecec, #00b894);
+            color: white;
+        }
+
+        .trade-type.sell {
+            background: linear-gradient(135deg, #fd79a8, #e84393);
+            color: white;
+        }
+
+        .trade-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            font-size: 14px;
+        }
+
+        .trade-detail {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .trade-detail strong {
+            color: #667eea;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .alert-settings {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+
+        .alert-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .control-row {
+                flex-direction: column;
+            }
+            
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .trade-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📈 Insider Trading Tracker</h1>
+            <p>Monitor SEC Form 4 filings and insider trading patterns</p>
+        </div>
+
+        <div class="controls">
+            <div class="control-row">
+                <div class="form-group">
+                    <label for="ticker">Stock Ticker (e.g., AAPL, TSLA)</label>
+                    <input type="text" id="ticker" placeholder="Enter ticker symbol" value="AAPL">
+                </div>
+                <div class="form-group">
+                    <label for="dateRange">Date Range</label>
+                    <select id="dateRange">
+                        <option value="7">Last 7 days</option>
+                        <option value="30" selected>Last 30 days</option>
+                        <option value="90">Last 90 days</option>
+                        <option value="365">Last year</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="minAmount">Min Trade Amount ($)</label>
+                    <input type="number" id="minAmount" placeholder="e.g., 100000" value="50000">
+                </div>
+            </div>
+            <div class="control-row">
+                <button class="btn" onclick="fetchInsiderTrades()">
+                    <span id="searchText">🔍 Search Trades</span>
+                    <span id="loadingSpinner" class="loading-spinner" style="display: none;"></span>
+                </button>
+                <button class="btn" onclick="exportData()" id="exportBtn" disabled>📊 Export Data</button>
+                <button class="btn" onclick="toggleAlerts()">🔔 Setup Alerts</button>
+            </div>
+        </div>
+
+        <div id="statusDiv" class="status" style="display: none;"></div>
+
+        <div class="dashboard" id="dashboard" style="display: none;">
+            <div class="card">
+                <h3>📊 Total Trades</h3>
+                <div class="metric" id="totalTrades">0</div>
+                <p>Form 4 filings found</p>
+            </div>
+            <div class="card">
+                <h3>💰 Total Volume</h3>
+                <div class="metric" id="totalVolume">$0</div>
+                <p>Combined trade value</p>
+            </div>
+            <div class="card">
+                <h3>📈 Buy/Sell Ratio</h3>
+                <div class="metric" id="buySellRatio">0:0</div>
+                <p>Purchases vs Sales</p>
+            </div>
+            <div class="card">
+                <h3>👥 Unique Insiders</h3>
+                <div class="metric" id="uniqueInsiders">0</div>
+                <p>Different insiders trading</p>
+            </div>
+        </div>
+
+        <div class="alert-settings" id="alertSettings" style="display: none;">
+            <h3>🔔 Alert Settings</h3>
+            <div class="alert-item">
+                <span>Notify on trades > $1M</span>
+                <input type="checkbox" id="alertHighValue" checked>
+            </div>
+            <div class="alert-item">
+                <span>Notify on CEO/CFO trades</span>
+                <input type="checkbox" id="alertExecutives" checked>
+            </div>
+            <div class="alert-item">
+                <span>Notify on unusual volume</span>
+                <input type="checkbox" id="alertVolume">
+            </div>
+        </div>
+
+        <div class="trades-container" id="tradesContainer" style="display: none;">
+            <div class="trades-header">
+                <h2>Recent Insider Trades</h2>
+                <div class="filters">
+                    <button class="filter-btn active" onclick="filterTrades('all')">All</button>
+                    <button class="filter-btn" onclick="filterTrades('buy')">Purchases</button>
+                    <button class="filter-btn" onclick="filterTrades('sell')">Sales</button>
+                    <button class="filter-btn" onclick="filterTrades('executive')">Executives</button>
+                </div>
+            </div>
+            <div id="tradesList"></div>
+        </div>
+    </div>
+
+    <script>
+        let allTrades = [];
+        let currentFilter = 'all';
+        let alertsEnabled = false;
+
+        // SEC EDGAR API configuration
+        const SEC_BASE_URL = 'https://data.sec.gov';
+        const USER_AGENT = 'InsiderTradingTracker contact@example.com';
+
+        // Mock data for demonstration (SEC API has CORS restrictions)
+        const mockInsiderData = {
+            'AAPL': [
+                {
+                    name: 'Timothy D. Cook',
+                    title: 'Chief Executive Officer',
+                    date: '2024-06-10',
+                    type: 'Sale',
+                    shares: 50000,
+                    price: 195.50,
+                    value: 9775000,
+                    owned: 3200000
+                },
+                {
+                    name: 'Luca Maestri',
+                    title: 'Chief Financial Officer', 
+                    date: '2024-06-08',
+                    type: 'Purchase',
+                    shares: 1000,
+                    price: 192.30,
+                    value: 192300,
+                    owned: 85000
+                },
+                {
+                    name: 'Katherine L. Adams',
+                    title: 'General Counsel',
+                    date: '2024-06-05',
+                    type: 'Sale',
+                    shares: 5000,
+                    price: 190.75,
+                    value: 953750,
+                    owned: 120000
+                }
+            ],
+            'TSLA': [
+                {
+                    name: 'Elon Musk',
+                    title: 'Chief Executive Officer',
+                    date: '2024-06-09',
+                    type: 'Sale',
+                    shares: 100000,
+                    price: 185.20,
+                    value: 18520000,
+                    owned: 411000000
+                },
+                {
+                    name: 'Zachary Kirkhorn',
+                    title: 'Chief Financial Officer',
+                    date: '2024-06-07',
+                    type: 'Purchase',
+                    shares: 2500,
+                    price: 182.50,
+                    value: 456250,
+                    owned: 95000
+                }
+            ],
+            'MSFT': [
+                {
+                    name: 'Satya Nadella',
+                    title: 'Chief Executive Officer',
+                    date: '2024-06-11',
+                    type: 'Sale',
+                    shares: 25000,
+                    price: 420.80,
+                    value: 10520000,
+                    owned: 850000
+                },
+                {
+                    name: 'Amy Hood',
+                    title: 'Chief Financial Officer',
+                    date: '2024-06-09',
+                    type: 'Purchase',
+                    shares: 1500,
+                    price: 418.90,
+                    value: 628350,
+                    owned: 125000
+                }
+            ]
+        };
+
+        async function fetchInsiderTrades() {
+            const ticker = document.getElementById('ticker').value.toUpperCase().trim();
+            const dateRange = parseInt(document.getElementById('dateRange').value);
+            const minAmount = parseFloat(document.getElementById('minAmount').value) || 0;
+
+            if (!ticker) {
+                showStatus('Please enter a ticker symbol', 'error');
+                return;
+            }
+
+            setLoadingState(true);
+            showStatus('Fetching insider trading data...', 'loading');
+
+            try {
+                // Simulate API delay
+                await new Promise(resolve => setTimeout(resolve, 1500));
+
+                // Use mock data (in real implementation, this would call SEC EDGAR API)
+                const trades = mockInsiderData[ticker] || [];
+                
+                // Filter by date range and minimum amount
+                const cutoffDate = new Date();
+                cutoffDate.setDate(cutoffDate.getDate() - dateRange);
+                
+                allTrades = trades.filter(trade => {
+                    const tradeDate = new Date(trade.date);
+                    return tradeDate >= cutoffDate && trade.value >= minAmount;
+                });
+
+                if (allTrades.length === 0) {
+                    showStatus(`No insider trades found for ${ticker} in the specified criteria`, 'error');
+                    hideDashboard();
+                    return;
+                }
+
+                showStatus(`Found ${allTrades.length} insider trades for ${ticker}`, 'success');
+                updateDashboard();
+                displayTrades();
+                checkAlerts();
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                showStatus('Error fetching insider trading data. Please try again.', 'error');
+            } finally {
+                setLoadingState(false);
+            }
+        }
+
+        function updateDashboard() {
+            const totalTrades = allTrades.length;
+            const totalVolume = allTrades.reduce((sum, trade) => sum + trade.value, 0);
+            const buyTrades = allTrades.filter(t => t.type === 'Purchase').length;
+            const sellTrades = allTrades.filter(t => t.type === 'Sale').length;
+            const uniqueInsiders = new Set(allTrades.map(t => t.name)).size;
+
+            document.getElementById('totalTrades').textContent = totalTrades;
+            document.getElementById('totalVolume').textContent = formatCurrency(totalVolume);
+            document.getElementById('buySellRatio').textContent = `${buyTrades}:${sellTrades}`;
+            document.getElementById('uniqueInsiders').textContent = uniqueInsiders;
+
+            // Color coding for metrics
+            const volumeEl = document.getElementById('totalVolume');
+            volumeEl.className = 'metric ' + (totalVolume > 10000000 ? 'positive' : '');
+
+            const ratioEl = document.getElementById('buySellRatio');
+            ratioEl.className = 'metric ' + (buyTrades > sellTrades ? 'positive' : 'negative');
+
+            document.getElementById('dashboard').style.display = 'grid';
+            document.getElementById('exportBtn').disabled = false;
+        }
+
+        function displayTrades() {
+            const container = document.getElementById('tradesList');
+            const filteredTrades = filterTradesByType(allTrades, currentFilter);
+
+            if (filteredTrades.length === 0) {
+                container.innerHTML = '<div class="no-data">No trades match the current filter</div>';
+                document.getElementById('tradesContainer').style.display = 'block';
+                return;
+            }
+
+            container.innerHTML = filteredTrades.map(trade => `
+                <div class="trade-item">
+                    <div class="trade-header">
+                        <div class="trade-company">${document.getElementById('ticker').value.toUpperCase()}</div>
+                        <div class="trade-type ${trade.type.toLowerCase()}">${trade.type}</div>
+                    </div>
+                    <div class="trade-details">
+                        <div class="trade-detail">
+                            <span><strong>Insider:</strong></span>
+                            <span>${trade.name}</span>
+                        </div>
+                        <div class="trade-detail">
+                            <span><strong>Title:</strong></span>
+                            <span>${trade.title}</span>
+                        </div>
+                        <div class="trade-detail">
+                            <span><strong>Date:</strong></span>
+                            <span>${formatDate(trade.date)}</span>
+                        </div>
+                        <div class="trade-detail">
+                            <span><strong>Shares:</strong></span>
+                            <span>${trade.shares.toLocaleString()}</span>
+                        </div>
+                        <div class="trade-detail">
+                            <span><strong>Price:</strong></span>
+                            <span>$${trade.price.toFixed(2)}</span>
+                        </div>
+                        <div class="trade-detail">
+                            <span><strong>Total Value:</strong></span>
+                            <span>${formatCurrency(trade.value)}</span>
+                        </div>
+                        <div class="trade-detail">
+                            <span><strong>Shares Owned:</strong></span>
+                            <span>${trade.owned.toLocaleString()}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('tradesContainer').style.display = 'block';
+        }
+
+        function filterTrades(type) {
+            currentFilter = type;
+            
+            // Update filter button states
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            displayTrades();
+        }
+
+        function filterTradesByType(trades, type) {
+            switch (type) {
+                case 'buy':
+                    return trades.filter(t => t.type === 'Purchase');
+                case 'sell':
+                    return trades.filter(t => t.type === 'Sale');
+                case 'executive':
+                    return trades.filter(t => 
+                        t.title.includes('CEO') || 
+                        t.title.includes('CFO') || 
+                        t.title.includes('Chief')
+                    );
+                default:
+                    return trades;
+            }
+        }
+
+        function checkAlerts() {
+            if (!alertsEnabled) return;
+
+            const highValueAlert = document.getElementById('alertHighValue').checked;
+            const executiveAlert = document.getElementById('alertExecutives').checked;
+            const volumeAlert = document.getElementById('alertVolume').checked;
+
+            allTrades.forEach(trade => {
+                if (highValueAlert && trade.value > 1000000) {
+                    showNotification(`High-value trade alert: ${trade.name} ${trade.type.toLowerCase()}ed $${formatNumber(trade.value)} worth of shares`);
+                }
+
+                if (executiveAlert && (trade.title.includes('CEO') || trade.title.includes('CFO'))) {
+                    showNotification(`Executive trade alert: ${trade.title} ${trade.name} made a ${trade.type.toLowerCase()}`);
+                }
+
+                if (volumeAlert && trade.shares > 100000) {
+                    showNotification(`High-volume trade alert: ${formatNumber(trade.shares)} shares traded by ${trade.name}`);
+                }
+            });
+        }
+
+        function toggleAlerts() {
+            alertsEnabled = !alertsEnabled;
+            const alertSettings = document.getElementById('alertSettings');
+            alertSettings.style.display = alertSettings.style.display === 'none' ? 'block' : 'none';
+            
+            if (alertsEnabled) {
+                showNotification('Alerts enabled! You will be notified of significant trades.');
+            }
+        }
+
+        function exportData() {
+            if (allTrades.length === 0) return;
+
+            const csvContent = [
+                ['Date', 'Company', 'Insider', 'Title', 'Type', 'Shares', 'Price', 'Total Value', 'Shares Owned'],
+                ...allTrades.map(trade => [
+                    trade.date,
+                    document.getElementById('ticker').value.toUpperCase(),
+                    trade.name,
+                    trade.title,
+                    trade.type,
+                    trade.shares,
+                    trade.price,
+                    trade.value,
+                    trade.owned
+                ])
+            ].map(row => row.join(',')).join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `insider_trades_${document.getElementById('ticker').value}_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+
+            showNotification('Data exported successfully!');
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusDiv');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+
+            if (type === 'success' || type === 'error') {
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+
+        function setLoadingState(loading) {
+            const searchText = document.getElementById('searchText');
+            const spinner = document.getElementById('loadingSpinner');
+            const btn = searchText.parentElement;
+
+            if (loading) {
+                searchText.style.display = 'none';
+                spinner.style.display = 'inline-block';
+                btn.disabled = true;
+            } else {
+                searchText.style.display = 'inline';
+                spinner.style.display = 'none';
+                btn.disabled = false;
+            }
+        }
+
+        function hideDashboard() {
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('tradesContainer').style.display = 'none';
+            document.getElementById('exportBtn').disabled = true;
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(amount);
+        }
+
+        function formatNumber(num) {
+            return new Intl.NumberFormat('en-US').format(num);
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        // Initialize with sample data
+        document.addEventListener('DOMContentLoaded', () => {
+            // Auto-search on page load with AAPL
+            setTimeout(() => {
+                fetchInsiderTrades();
+            }, 1000);
+        });
+
+        // Allow Enter key to trigger search
+        document.getElementById('ticker').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                fetchInsiderTrades();
+            }
+        });
+    </script>
+</body>
+</html>
